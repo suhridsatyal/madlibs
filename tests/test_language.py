@@ -1,11 +1,5 @@
-import pytest
-import spacy
 from madlibs.play import tokenize, mark_blanks 
-
-
-@pytest.fixture()
-def nlp_model():
-    yield spacy.load("en_core_web_sm")
+from tests.conftest import nlp_model
 
 
 class TestTokenize:

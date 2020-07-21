@@ -18,7 +18,7 @@ Player's answer is compared with the actual sentence at the end of the game.
 # Pre-requisite: python 3.7 
 cd madlibs/
 pip install -r requirements.py
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_md
 ```
 
 ### Usage

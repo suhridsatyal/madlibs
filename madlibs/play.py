@@ -8,6 +8,7 @@ from prompt_toolkit import HTML, print_formatted_text, prompt
 from madlibs.constants import BLANK_TYPES, MAX_FETCH_ATTEMPTS, MIN_WORDS, STYLE
 from madlibs.language import MadLibsToken, mark_blanks, tokenize
 from madlibs.sentence import extract_wikipedia_sentence
+from madlibs.referee import calculate_score
 
 
 def tokens_to_string(
@@ -62,7 +63,7 @@ class Game:
         self.opponent = opponent
         self.is_collaborative = is_collaborative
         self.is_multiple_rounds = is_multiple_rounds
-        self.nlp_model = spacy.load("en_core_web_sm")
+        self.nlp_model = spacy.load("en_core_web_md")
 
     def play(self):
         """
@@ -81,6 +82,7 @@ class Game:
         """
         Helper method for a single game.
         """
+        guesses, answers = [], []
         print_formatted_text(HTML(
             "<prompt> Creating a madlib sentence ... </prompt>"), 
             style=STYLE)
@@ -105,6 +107,9 @@ class Game:
             s[blank_index] = f'<answer>{text}</answer>'
             actual[blank_index] = f'<actual>{madlib_tokens[blank_index].text}</actual>'
 
+            guesses.append(text)
+            answers.append(madlib_tokens[blank_index].text)
+
             if i < len(blank_indices) - 1:
                 # Don't print question after all blanks have been filled
                 print()
@@ -120,6 +125,9 @@ class Game:
         print()
         print_formatted_text(HTML("<prompt> Actual sentence: </prompt>"), style=STYLE)
         print_formatted_text(HTML(" ".join(actual)), style=STYLE)
+        print()
+        score = calculate_score(guesses, answers, self.nlp_model) 
+        print_formatted_text(HTML(f"<prompt> Score: {score} </prompt>"), style=STYLE)
 
 
 def main():
