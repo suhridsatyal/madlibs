@@ -89,7 +89,7 @@ def mark_blanks(
 
     while invisible_count > 0 and len(pos_map) > 0:
         k = random.choice(list(pos_map.keys()))
-        if k in BLANK_TYPES:
+        if k in BLANK_TYPES.keys():
             chosen_val = random.choice(list(pos_map[k])) 
             if chosen_val - 1 not in prev_blanks:
                 mad_libs_tokens[chosen_val].is_visible = False

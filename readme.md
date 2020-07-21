@@ -33,6 +33,7 @@ python -m madlibs.play
 - Referee system to automatically decide whether player or the model won
 - Model vs Model games
 - Genre specific sentences and expansion of data source beyond wikipedia
+- Better hints (entity type instead of part-of-speech)
 
 ### Links
 [1] https://en.wikipedia.org/wiki/Mad_Libs

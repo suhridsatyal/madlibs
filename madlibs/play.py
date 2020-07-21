@@ -5,7 +5,7 @@ from typing import List
 import spacy
 from prompt_toolkit import HTML, print_formatted_text, prompt
 
-from madlibs.constants import MAX_FETCH_ATTEMPTS, MIN_WORDS, STYLE
+from madlibs.constants import BLANK_TYPES, MAX_FETCH_ATTEMPTS, MIN_WORDS, STYLE
 from madlibs.language import MadLibsToken, mark_blanks, tokenize
 from madlibs.sentence import extract_wikipedia_sentence
 
@@ -38,6 +38,20 @@ def get_first_blank_index(
             return i
 
 
+def prepare_question(
+    words: List[str],
+    madlib_tokens: List[MadLibsToken]
+):
+    """
+    Returns a list of words upto the blank, the blank, and
+    a hint based on the part of speech.
+    """
+    mark = get_first_blank_index(madlib_tokens)
+    words_till_blank = words[:mark + 1]
+    hint = "<hint>" + BLANK_TYPES.get(madlib_tokens[mark].part_of_speech, "") + "</hint>"
+    return " ".join(words_till_blank + [hint])
+
+
 def main():
     """
     Runs MadLibs game on the terminal.
@@ -56,9 +70,8 @@ def main():
     s = tokens_to_string(madlib_tokens) 
     actual = s.copy()
 
-    mark = get_first_blank_index(madlib_tokens)
-
-    print_formatted_text(HTML(" ".join(s[:mark+1])), style=STYLE)
+    question = prepare_question(s, madlib_tokens)
+    print_formatted_text(HTML(question), style=STYLE)
 
     for i, blank_index in enumerate(blank_indices):
         # Take input for each blank and display the result
@@ -71,10 +84,11 @@ def main():
         actual[blank_index] = f'<actual>{madlib_tokens[blank_index].text}</actual>'
 
         if i < len(blank_indices) - 1:
-            # Don't print after all blanks have been filled
+            # Don't print question after all blanks have been filled
             print()
-            mark = get_first_blank_index(madlib_tokens)
-            print_formatted_text(HTML(" ".join(s[:mark + 1])), style=STYLE)
+            question = prepare_question(s, madlib_tokens)
+            # mark = get_first_blank_index(madlib_tokens)
+            print_formatted_text(HTML(question), style=STYLE)
             print()
 
     # Display result
