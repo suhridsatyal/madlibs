@@ -1,0 +1,4 @@
+click
+spacy
+wikipedia
+pytest
