@@ -1,4 +1,4 @@
-spacy
-wikipedia
-pytest
-prompt_toolkit
+spacy==2.3.2
+wikipedia==1.4.0
+prompt-toolkit==3.0.5
+pytest==5.4.3

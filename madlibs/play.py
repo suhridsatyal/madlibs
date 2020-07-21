@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import List
+from typing import List, Optional, Any
 
 import spacy
 from prompt_toolkit import HTML, print_formatted_text, prompt
@@ -8,6 +8,7 @@ from prompt_toolkit import HTML, print_formatted_text, prompt
 from madlibs.constants import BLANK_TYPES, MAX_FETCH_ATTEMPTS, MIN_WORDS, STYLE
 from madlibs.language import MadLibsToken, mark_blanks, tokenize
 from madlibs.sentence import extract_wikipedia_sentence
+from madlibs.referee import calculate_score
 
 
 def tokens_to_string(
@@ -52,52 +53,86 @@ def prepare_question(
     return " ".join(words_till_blank + [hint])
 
 
-def main():
-    """
-    Runs MadLibs game on the terminal.
-    """
-    nlp_model = spacy.load("en_core_web_sm")
+class Game:
+    def __init__(
+        self,
+        opponent: Optional[Any] = None,
+        is_collaborative: bool = False,
+        is_multiple_rounds: bool = False
+    ):
+        self.opponent = opponent
+        self.is_collaborative = is_collaborative
+        self.is_multiple_rounds = is_multiple_rounds
+        self.nlp_model = spacy.load("en_core_web_md")
 
-    print_formatted_text(HTML(
-        "<prompt> Creating a madlib sentence ... </prompt>"), 
-        style=STYLE)
+    def play(self):
+        """
+        Runs MadLibs game on the terminal.
+        """
+        if self.is_multiple_rounds:
+            in_session = True
+            while in_session:
+                self._play_single()
+                answer = prompt("Keep playing? (Y/N)")
+                in_session = False if answer.lower() == "n" else True
+        else:
+            self._play_single()
 
-    # Prepare madlib sentence
-    sentence = extract_wikipedia_sentence(MIN_WORDS, MAX_FETCH_ATTEMPTS)
-    madlib_tokens = mark_blanks(*tokenize(sentence, nlp_model))
-    blank_indices = [i for i, t in enumerate(madlib_tokens) if not t.is_visible] 
-
-    s = tokens_to_string(madlib_tokens) 
-    actual = s.copy()
-
-    question = prepare_question(s, madlib_tokens)
-    print_formatted_text(HTML(question), style=STYLE)
-
-    for i, blank_index in enumerate(blank_indices):
-        # Take input for each blank and display the result
-        text = prompt(HTML(
-            "<prompt> Enter blank word: </prompt>"), 
+    def _play_single(self):
+        """
+        Helper method for a single game.
+        """
+        guesses, answers = [], []
+        print_formatted_text(HTML(
+            "<prompt> Creating a madlib sentence ... </prompt>"), 
             style=STYLE)
 
-        madlib_tokens[blank_index].is_visible = True
-        s[blank_index] = f'<answer>{text}</answer>'
-        actual[blank_index] = f'<actual>{madlib_tokens[blank_index].text}</actual>'
+        # Prepare madlib sentence
+        sentence = extract_wikipedia_sentence(MIN_WORDS, MAX_FETCH_ATTEMPTS)
+        madlib_tokens = mark_blanks(*tokenize(sentence, self.nlp_model))
+        blank_indices = [i for i, t in enumerate(madlib_tokens) if not t.is_visible] 
+        s = tokens_to_string(madlib_tokens) 
+        actual = s.copy()
 
-        if i < len(blank_indices) - 1:
-            # Don't print question after all blanks have been filled
-            print()
-            question = prepare_question(s, madlib_tokens)
-            # mark = get_first_blank_index(madlib_tokens)
-            print_formatted_text(HTML(question), style=STYLE)
-            print()
+        question = prepare_question(s, madlib_tokens)
+        print_formatted_text(HTML(question), style=STYLE)
 
-    # Display result
-    print()
-    print_formatted_text(HTML("<prompt> You said: </prompt>"), style=STYLE)
-    print_formatted_text(HTML(" ".join(s)), style=STYLE)
-    print()
-    print_formatted_text(HTML("<prompt> Actual sentence: </prompt>"), style=STYLE)
-    print_formatted_text(HTML(" ".join(actual)), style=STYLE)
+        for i, blank_index in enumerate(blank_indices):
+            # Take input for each blank and display the result
+            text = prompt(HTML(
+                "<prompt> Enter blank word: </prompt>"), 
+                style=STYLE)
+
+            madlib_tokens[blank_index].is_visible = True
+            s[blank_index] = f'<answer>{text}</answer>'
+            actual[blank_index] = f'<actual>{madlib_tokens[blank_index].text}</actual>'
+
+            guesses.append(text)
+            answers.append(madlib_tokens[blank_index].text)
+
+            if i < len(blank_indices) - 1:
+                # Don't print question after all blanks have been filled
+                print()
+                question = prepare_question(s, madlib_tokens)
+                # mark = get_first_blank_index(madlib_tokens)
+                print_formatted_text(HTML(question), style=STYLE)
+                print()
+
+        # Display result
+        print()
+        print_formatted_text(HTML("<prompt> You said: </prompt>"), style=STYLE)
+        print_formatted_text(HTML(" ".join(s)), style=STYLE)
+        print()
+        print_formatted_text(HTML("<prompt> Actual sentence: </prompt>"), style=STYLE)
+        print_formatted_text(HTML(" ".join(actual)), style=STYLE)
+        print()
+        score = calculate_score(guesses, answers, self.nlp_model) 
+        print_formatted_text(HTML(f"<prompt> Score: {score} </prompt>"), style=STYLE)
+
+
+def main():
+    game = Game()
+    game.play()
 
 
 if __name__ == '__main__':
