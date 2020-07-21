@@ -1,4 +1,4 @@
-click
 spacy
 wikipedia
 pytest
+prompt_toolkit
